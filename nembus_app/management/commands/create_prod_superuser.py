@@ -15,7 +15,7 @@ class Command(BaseCommand):
         # ¡Usa una contraseña segura!
         username = os.environ.get('DJANGO_SUPERUSER_USERNAME', 'admin_render') # Nombre de usuario deseado
         email = os.environ.get('DJANGO_SUPERUSER_EMAIL', 'admin@example.com') # Email (opcional, puedes dejarlo vacío '')
-        password = os.environ.get('DJANGO_SUPERUSER_PASSWORD', 'contraseña_segura_aqui') # CONTRASEÑA SEGURA
+        password = os.environ.get('DJANGO_SUPERUSER_PASSWORD', 'admin12345a') # CONTRASEÑA SEGURA
 
         if not password:
              self.stdout.write(self.style.ERROR('Error: La contraseña del superusuario no está configurada (DJANGO_SUPERUSER_PASSWORD).'))
