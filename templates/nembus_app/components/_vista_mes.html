@@ -1,0 +1,24 @@
+<div class="card kpi-card">
+    <p class="kpi-value">${{ ventas_mes_anterior|floatformat:0 }}</p>
+    <p class="kpi-label">Ventas Mes Anterior</p>
+</div>
+<div class="card kpi-card">
+    <p class="kpi-value" style="color: {% if cambio_porcentual >= 0 %}#198754{% else %}#dc3545{% endif %};">
+        {{ cambio_porcentual|floatformat:1 }}%
+    </p>
+    <p class="kpi-label">Cambio vs Mes Anterior</p>
+</div>
+<div class="card">
+    <h3>Tendencia de Ventas del Mes (Litros)</h3>
+    <div class="chart-container"><canvas id="tendenciaMesChart" data-labels='{{ tendencia_mes_labels|safe }}' data-values='{{ tendencia_mes_data|safe }}'></canvas></div>
+</div>
+<div class="card">
+    <h3>Rendimiento por Camión ({{ titulo_periodo }})</h3>
+    <div class="chart-container"><canvas id="rendimientoCamionesChart" data-labels='{{ rendimiento_camiones_labels|safe }}' data-values='{{ rendimiento_camiones_data|safe }}'></canvas></div>
+</div>
+<div class="card">
+    <h3>Top 5 Clientes (Mes)</h3>
+    <div class="chart-container">
+        <canvas id="topClientesChart" data-labels='{{ top_clientes_mes_labels|safe }}' data-values='{{ top_clientes_mes_data|safe }}'></canvas>
+    </div>
+</div>

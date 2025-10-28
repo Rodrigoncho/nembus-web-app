@@ -1,0 +1,12 @@
+<div class="card kpi-card">
+    <p class="kpi-value">${{ ventas_totales|floatformat:0 }}</p>
+    <p class="kpi-label">Ventas Totales ({{ titulo_periodo }})</p>
+</div>
+<div class="card kpi-card">
+    <p class="kpi-value">{{ litros_vendidos|floatformat:0 }} L</p>
+    <p class="kpi-label">Litros Vendidos ({{ titulo_periodo }})</p>
+</div>
+<div class="card kpi-card">
+    <p class="kpi-value">{{ numero_reportes }}</p>
+    <p class="kpi-label">Reportes de Venta ({{ titulo_periodo }})</p>
+</div>

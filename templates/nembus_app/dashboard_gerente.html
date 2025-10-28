@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Gerencia</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <style>
+        /* ... (Tus estilos existentes ... asegúrate de tener estilos para .btn-excel, etc.) ... */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f8f9fa; color: #333; margin: 0; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; } /* Ajustado gap */
+        .header-actions { display: flex; flex-wrap: wrap; gap: 10px; } /* Contenedor para botones */
+        .navigation { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; padding: 10px; background-color: #e9ecef; border-radius: 8px; }
+        .navigation .btn { text-decoration: none; padding: 10px 20px; border-radius: 5px; color: #333; font-weight: bold; border: 1px solid #dee2e6; background-color: white; transition: background-color 0.2s, color 0.2s; }
+        .navigation .btn:hover { background-color: #f1f1f1; }
+        .navigation .btn.active { background-color: #007bff; color: white; border-color: #007bff; }
+        .navigation .separator { border-left: 2px solid #ccc; margin: 0 10px; align-self: stretch; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; } /* Ajustado minmax */
+        .card { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); }
+        .chart-container { position: relative; height: 300px; width: 100%; margin: auto; } /* Altura reducida */
+        .kpi-card { text-align: center; }
+        .kpi-value { font-size: 2em; font-weight: bold; color: #007bff; margin: 0; } /* Tamaño reducido */
+        .kpi-label { font-size: 0.9em; color: #6c757d; margin-top: 5px; } /* Tamaño reducido */
+        .progress-bar { width: 100%; background-color: #e9ecef; border-radius: 5px; height: 18px; overflow: hidden; margin-top: 5px; margin-bottom: 10px; } /* Altura reducida */
+        .progress-bar-fill { height: 100%; background-color: #28a745; text-align: center; color: white; font-weight: bold; line-height: 18px; font-size: 0.8em; transition: width 0.5s ease-in-out; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
+        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #ddd; } /* Padding reducido */
+        th { background-color: #f2f2f2; font-weight: bold; }
+        td.currency, th.currency { text-align: right; } /* Alinear números a la derecha */
+        .btn-action { text-decoration: none; padding: 8px 12px; border-radius: 5px; color: white; font-weight: bold; display: inline-block; font-size: 0.9em;} /* Padding reducido */
+        .btn-excel { background-color: #198754; } /* Verde oscuro para Excel */
+        .btn-admin { background-color: #6c757d; }
+        .table-responsive { overflow-x: auto; } /* Scroll horizontal para tablas */
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Dashboard Gerencia</h1>
+        <div class="header-actions">
+            {# Botón de Exportar Excel para Bombas (se muestra si la división es 'bombas' o 'relaciones') #}
+            {% if division_seleccionada == 'bombas' or division_seleccionada == 'relaciones' %}
+            <a href="{% url 'nembus_app:exportar_ventas_bomba_excel' %}?periodo={{ periodo_seleccionado }}" class="btn-action btn-excel" title="Exportar detalle de ventas individuales de bombas">📊 Exportar Ventas Bomba (Excel)</a>
+            {% endif %}
+
+            {# Botón de Exportar CSV para Camiones (se muestra si la división es 'camiones' o 'relaciones') #}
+            {% if division_seleccionada == 'camiones' or division_seleccionada == 'relaciones' %}
+            <a href="{% url 'nembus_app:exportar_reportes' %}?periodo={{ periodo_seleccionado }}&division=camiones" class="btn-action btn-excel" title="Exportar resumen de ventas desde camiones">🚚 Exportar Ventas Camión (CSV)</a>
+            {% endif %}
+
+            <a href="{% url 'admin:index' %}" class="btn-action btn-admin">⚙️ Panel Admin</a>
+        </div>
+    </div>
+
+    <div class="navigation">
+        <a href="{% url 'nembus_app:dashboard_gerente' 'camiones' periodo_seleccionado %}" class="btn {% if division_seleccionada == 'camiones' %}active{% endif %}">🚚 Camiones</a>
+        <a href="{% url 'nembus_app:dashboard_gerente' 'bombas' periodo_seleccionado %}" class="btn {% if division_seleccionada == 'bombas' %}active{% endif %}">⛽ Bombas</a>
+        <a href="{% url 'nembus_app:dashboard_gerente' 'relaciones' periodo_seleccionado %}" class="btn {% if division_seleccionada == 'relaciones' %}active{% endif %}">📊 Relaciones</a>
+        <div class="separator"></div>
+        <a href="{% url 'nembus_app:dashboard_gerente' division_seleccionada 'dia' %}" class="btn {% if periodo_seleccionado == 'dia' %}active{% endif %}">Hoy</a>
+        <a href="{% url 'nembus_app:dashboard_gerente' division_seleccionada 'semana' %}" class="btn {% if periodo_seleccionado == 'semana' %}active{% endif %}">Semana</a>
+        <a href="{% url 'nembus_app:dashboard_gerente' division_seleccionada 'mes' %}" class="btn {% if periodo_seleccionado == 'mes' %}active{% endif %}">Mes</a>
+    </div>
+
+    <div class="dashboard-grid">
+
+        {# --- Sección KPIs --- #}
+        {% if division_seleccionada == 'camiones' %}
+            <div class="card kpi-card"><p class="kpi-value">{{ litros_vendidos_camiones|floatformat:0 }} L</p><p class="kpi-label">Litros Vendidos (Camiones) ({{ titulo_periodo }})</p></div>
+            <div class="card kpi-card"><p class="kpi-value">${{ ingresos_totales_camiones|floatformat:0 }}</p><p class="kpi-label">Ingresos Totales (Camiones) ({{ titulo_periodo }})</p></div>
+            <div class="card kpi-card"><p class="kpi-value">{{ promedio_litros_viaje|default_if_none:"0"|floatformat:1 }} L</p><p class="kpi-label">Prom. Litros / Viaje (Camión)</p></div>
+        {% elif division_seleccionada == 'bombas' %}
+            <div class="card kpi-card"><p class="kpi-value">{{ total_litros_vendidos_bomba_detalle|floatformat:0 }} L</p><p class="kpi-label">Litros Vendidos (Bombas) ({{ titulo_periodo }})</p></div>
+            <div class="card kpi-card"><p class="kpi-value">${{ total_ingreso_bomba_detalle|floatformat:0 }}</p><p class="kpi-label">Ingresos Totales (Bombas) ({{ titulo_periodo }})</p></div>
+            <div class="card kpi-card"><p class="kpi-value">{{ turnos_reportados }}</p><p class="kpi-label">Turnos Iniciados ({{ titulo_periodo }})</p></div>
+        {% elif division_seleccionada == 'relaciones' %}
+            <div class="card kpi-card"><p class="kpi-value">${{ ingresos_totales|floatformat:0 }}</p><p class="kpi-label">Ingresos Totales (Global) ({{ titulo_periodo }})</p></div>
+            <div class="card kpi-card"><p class="kpi-value">{{ litros_vendidos_totales|floatformat:0 }} L</p><p class="kpi-label">Litros Vendidos (Global) ({{ titulo_periodo }})</p></div>
+            {% if chofer_rentable %}
+            <div class="card kpi-card">
+                <p class="kpi-value" style="font-size: 1.5em;">{{ chofer_rentable.trabajador__username }}</p> {# Nombre más pequeño #}
+                <p class="kpi-label">🏆 Chofer Más Rentable (${{ chofer_rentable.total_ingresos|floatformat:0 }})</p>
+            </div>
+            {% endif %}
+        {% endif %}
+
+        {# --- Sección Contenido Principal por División --- #}
+        {% if division_seleccionada == 'camiones' %}
+            {% if periodo_seleccionado == 'dia' %}
+                <div class="card">
+                    <h3>Inventario Actual Camiones</h3>
+                    {% for camion in camiones %}{% if camion.capacidad_total > 0 %}
+                    <div><strong>{{ camion.patente }}</strong>: {{ camion.litros_actuales|floatformat:0 }}/{{ camion.capacidad_total|floatformat:0 }} L
+                        <div class="progress-bar"><div class="progress-bar-fill" style="width:{{ camion.porcentaje_actual|floatformat:0 }}%;">{{ camion.porcentaje_actual|floatformat:0 }}%</div></div>
+                    </div>
+                    {% endif %}{% empty %}<p>No hay camiones registrados.</p>{% endfor %}
+                </div>
+                <div class="card"><h3>Ventas por Hora (Camiones)</h3><div class="chart-container"><canvas id="ventasHoraChart" data-labels='{{ ventas_hora_labels|safe }}' data-values='{{ ventas_hora_data|safe }}'></canvas></div></div>
+            {% endif %}
+
+            {% if periodo_seleccionado == 'semana' or periodo_seleccionado == 'mes' %}
+                <div class="card">
+                    <h3>Eficiencia de la Flota ({{ titulo_periodo }})</h3>
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>Patente</th><th class="currency">Viajes</th><th class="currency">Prom. L/Viaje</th><th class="currency">Ingreso Total</th></tr></thead>
+                            <tbody>
+                            {% for c in eficiencia_flota %}
+                                <tr><td><strong>{{ c.camion__patente }}</strong></td><td class="currency">{{ c.num_viajes }}</td><td class="currency">{{ c.promedio_litros_viaje|floatformat:1 }} L</td><td class="currency"><strong>${{ c.total_ingresos|floatformat:0 }}</strong></td></tr>
+                            {% empty %}<tr><td colspan="4" style="text-align:center;">No hay datos en este período.</td></tr>{% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if periodo_seleccionado == 'mes' %}
+                <div class="card"><h3>Tendencia Ventas Camión (Litros)</h3><div class="chart-container"><canvas id="tendenciaChart" data-labels='{{ tendencia_labels|safe }}' data-values='{{ tendencia_data|safe }}'></canvas></div></div>
+            {% endif %}
+
+        {% elif division_seleccionada == 'bombas' %}
+            {% for pdv in datos_detallados_pdv %}
+            <div class="card">
+                <h3>Análisis {{ pdv.pdv_nombre }} ({{ titulo_periodo }})</h3>
+                <h4>Ventas por Bomba (Litros)</h4>
+                <div class="chart-container" style="height: 250px;"><canvas id="bombasChart_{{ forloop.counter }}" data-labels='{{ pdv.bombas_labels|safe }}' data-values='{{ pdv.bombas_data|safe }}'></canvas></div>
+                <hr style="margin: 1.5em 0;">
+                <h4>Ventas por Turno (Litros)</h4>
+                <div class="chart-container" style="height: 250px;"><canvas id="turnosChart_{{ forloop.counter }}" data-labels='{{ pdv.turnos_labels|safe }}' data-values='{{ pdv.turnos_data|safe }}'></canvas></div>
+            </div>
+            {% empty %}
+            <div class="card"><p>No hay datos de ventas de bombas para mostrar en este período.</p></div>
+            {% endfor %}
+
+        {% elif division_seleccionada == 'relaciones' %}
+            <div class="card">
+                <h3>Desglose General de Ingresos ({{ titulo_periodo }})</h3>
+                <div class="chart-container"><canvas id="ingresosDesgloseChart" data-values='{{ ingresos_desglose_data|safe }}'></canvas></div>
+            </div>
+            <div class="card">
+                <h3>Proporción de Viajes por Chofer ({{ titulo_periodo }})</h3>
+                <div class="chart-container"><canvas id="viajesPorChoferChart" data-labels='{{ viajes_chofer_labels|safe }}' data-values='{{ viajes_chofer_data|safe }}'></canvas></div>
+            </div>
+            <div class="card">
+                <h3>Top 5 Clientes (Camiones, {{ titulo_periodo }})</h3>
+                <div class="chart-container"><canvas id="comparativaClientesChart" data-labels='{{ comparativa_clientes_labels|safe }}' data-litros='{{ comparativa_clientes_litros|safe }}' data-monto='{{ comparativa_clientes_monto|safe }}'></canvas></div>
+            </div>
+        {% endif %}
+    </div> {# Fin dashboard-grid #}
+
+    <script>
+        // Registrar plugin DataLabels globalmente
+        Chart.register(ChartDataLabels);
+        // Opciones globales para quitar labels en los gráficos de pie/doughnut
+        Chart.defaults.plugins.datalabels.display = false; // Ocultar por defecto
+
+        const division = '{{ division_seleccionada }}';
+        const periodo = '{{ periodo_seleccionado }}';
+
+        // Función reutilizable para renderizar gráficos
+        function renderChart(config) {
+            const element = document.getElementById(config.elementId);
+            if (!element) { console.error("Elemento no encontrado:", config.elementId); return; }
+            const context = element.getContext('2d');
+
+            // Destruir gráfico existente si lo hay
+            if (context.chart) { context.chart.destroy(); }
+
+            // Crear nuevo gráfico
+            try {
+                // Parsear datos JSON de forma segura
+                const labels = config.data.labels ? JSON.parse(element.dataset.labels || '[]') : undefined;
+                let datasets = [];
+
+                if (config.elementId.startsWith('comparativaClientes')) {
+                    datasets = [
+                        { label: 'Litros Vendidos', data: JSON.parse(element.dataset.litros || '[]'), backgroundColor: 'rgba(54, 162, 235, 0.6)', yAxisID: 'yLitros', order: 2 },
+                        { label: 'Monto Total (CLP)', data: JSON.parse(element.dataset.monto || '[]'), backgroundColor: 'rgba(75, 192, 192, 0.6)', yAxisID: 'yMonto', order: 1 }
+                    ];
+                } else if (config.elementId === 'ingresosDesgloseChart') {
+                     datasets = [{ data: JSON.parse(element.dataset.values || '[]'), backgroundColor: ['#0d6efd', '#6c757d', '#198754'] }];
+                     config.data.labels = ['Ing. Comb. Camión', 'Ing. Flete Camión', 'Ing. Bombas']; // Labels directos para este pie
+                }
+                 else {
+                    datasets = [{
+                        label: config.data.datasets[0].label || 'Valor',
+                        data: JSON.parse(element.dataset.values || '[]'),
+                        backgroundColor: config.data.datasets[0].backgroundColor || '#0d6efd', // Color por defecto
+                        borderColor: config.data.datasets[0].borderColor || '#0d6efd',
+                        tension: config.data.datasets[0].tension || 0.1,
+                        fill: config.data.datasets[0].fill !== undefined ? config.data.datasets[0].fill : false,
+                        yAxisID: config.data.datasets[0].yAxisID || undefined
+                    }];
+                 }
+
+                // Asignar labels si existen para este tipo de gráfico
+                const chartData = { datasets };
+                if (labels !== undefined) { chartData.labels = labels; }
+
+
+                context.chart = new Chart(context, {
+                    type: config.type,
+                    data: chartData,
+                    options: config.options
+                });
+            } catch (e) {
+                console.error("Error al parsear datos o crear gráfico:", config.elementId, e);
+                // Opcional: Mostrar mensaje de error en lugar del gráfico
+                element.parentElement.innerHTML = '<p style="color:red;">Error al cargar el gráfico.</p>';
+            }
+        }
+
+        // --- Renderizado Condicional de Gráficos ---
+
+        if (division === 'camiones') {
+            if (periodo === 'dia') {
+                renderChart({ elementId: 'ventasHoraChart', type: 'line', data: { datasets: [{ label: 'Litros', fill: true }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+            }
+            if (periodo === 'mes') {
+                renderChart({ elementId: 'tendenciaChart', type: 'line', data: { datasets: [{ label: 'Litros' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+            }
+        }
+
+        if (division === 'bombas') {
+            {% for pdv in datos_detallados_pdv %}
+                renderChart({ elementId: 'bombasChart_{{ forloop.counter }}', type: 'doughnut', data: { datasets: [{ backgroundColor: ['#28a745', '#ffc107', '#fd7e14', '#0dcaf0', '#6f42c1'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' }, datalabels: { display: true, formatter: (v, c) => v.toFixed(0) + ' L', color: '#fff' } } } });
+                renderChart({ elementId: 'turnosChart_{{ forloop.counter }}', type: 'doughnut', data: { datasets: [{ backgroundColor: ['#0dcaf0', '#6f42c1'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' }, datalabels: { display: true, formatter: (v, c) => v.toFixed(0) + ' L', color: '#fff' } } } });
+            {% endfor %}
+        }
+
+        if (division === 'relaciones') {
+            renderChart({ elementId: 'ingresosDesgloseChart', type: 'pie', data: { datasets: [{}] }, options: { responsive: true, maintainAspectRatio: false, plugins: { datalabels: { display: true, formatter: (v, c) => { const total = c.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); return total > 0 ? (v * 100 / total).toFixed(0) + '%' : '0%'; }, color: '#fff' } } } });
+            renderChart({ elementId: 'viajesPorChoferChart', type: 'pie', data: { datasets: [{ backgroundColor: ['#0d6efd', '#dc3545', '#198754', '#ffc107', '#6f42c1', '#fd7e14'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' }, datalabels: { display: true, formatter: (value, context) => value, color: '#fff' } } } });
+            renderChart({ elementId: 'comparativaClientesChart', type: 'bar', data: { datasets: [] }, /* Dejar vacío, se llena en renderChart */
+                options: {
+                    responsive: true, maintainAspectRatio: false, indexAxis: 'y', // Barras horizontales
+                    scales: {
+                        x: { stacked: false }, // No apilar ejes X
+                        yLitros: { type: 'linear', display: true, position: 'left', grid: { drawOnChartArea: false }, title: { display: true, text: 'Litros' }, ticks: { callback: (v) => v + ' L' } },
+                        yMonto: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'CLP' }, ticks: { callback: (v) => '$' + new Intl.NumberFormat('es-CL').format(v) } }
+                    },
+                    plugins: { datalabels: { display: false } } // Ocultar datalabels aquí
+                }
+            });
+        }
+    </script>
+</body>
+</html>

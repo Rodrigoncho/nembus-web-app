@@ -1,0 +1,111 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+<style>
+    /* --- Estilos Modernos para la Tarjeta de Login --- */
+    
+    /* Fondo de la página */
+    body {
+        background-color: #f8f9fa; /* Fondo gris claro */
+    }
+
+    /* Estilo para la caja de login (el contenido principal) */
+    #content-main {
+        background: white;
+        border-radius: 12px; /* Esquinas redondeadas */
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Sombra sutil */
+        padding: 40px;
+        max-width: 450px; 
+        margin: 50px auto; 
+    }
+
+    /* Cabecera personalizada dentro de la caja */
+    #header {
+        background: #007bff; /* Color azul primario */
+        color: white;
+        border-top-left-radius: 12px;
+        border-top-right-radius: 12px;
+        padding: 20px 20px;
+        margin: -40px -40px 20px -40px; /* Extender al borde de la caja */
+        text-align: center;
+        font-size: 1.5em;
+        font-weight: bold;
+    }
+    
+    /* Estilo del botón de Login */
+    .submit-row input {
+        background-color: #007bff; /* Botón azul */
+        border: none;
+        padding: 10px 15px;
+        font-weight: bold;
+        width: 100%;
+        display: block;
+        cursor: pointer;
+    }
+    .submit-row input:hover {
+        background-color: #0056b3;
+    }
+    
+    /* Mejorar la visibilidad de las etiquetas */
+    .form-row label {
+        color: #333;
+        font-weight: bold;
+    }
+    
+    /* Quitar el logo de Django que no se ve bien */
+    #branding h1 a {
+        visibility: hidden;
+    }
+
+</style>
+{{ block.super }}
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+
+    {# Se inserta la cabecera personalizada para el Admin #}
+    <div id="header">
+        Nembus: Acceso Gerencial
+    </div>
+
+    {% if form.errors and not form.non_field_errors %}
+    <p class="errornote">
+    {% if form.username.errors %}{% translate "Please enter your username and password." %}{% else %}{% translate "Please enter a correct username and password. Note that both fields may be case-sensitive." %}{% endif %}
+    </p>
+    {% endif %}
+
+    {% if form.non_field_errors %}
+    {% for error in form.non_field_errors %}
+    <p class="errornote">
+        {{ error }}
+    </p>
+    {% endfor %}
+    {% endif %}
+
+    {% if not user.is_authenticated %}
+        <form action="{{ app_path }}" method="post" id="login-form">{% csrf_token %}
+            <div class="form-row">
+                {{ form.username.label_tag }} {{ form.username }}
+            </div>
+            <div class="form-row">
+                {{ form.password.label_tag }} {{ form.password }}
+                <input type="hidden" name="next" value="{{ next }}" />
+            </div>
+            {% url 'admin:password_reset' as password_reset_url %}
+            {% if password_reset_url %}
+            <div class="password-reset-link">
+                <a href="{{ password_reset_url }}">{% translate 'Forgotten your password or username?' %}</a>
+            </div>
+            {% endif %}
+            <div class="submit-row">
+                <input type="submit" value="{% translate 'Log in' %}" />
+            </div>
+        </form>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block footer %}{% endblock %}

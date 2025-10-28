@@ -1,0 +1,11 @@
+/* Ocultar específicamente el div con la información del algoritmo hash */
+.change-form .form-row.field-password .readonly {
+    display: none;
+}
+
+/* Opcional: Si el enlace "Restablecer contraseña" queda muy pegado, puedes añadir un margen */
+/*
+.change-form .form-row.field-password .password-reset-link {
+    margin-top: 5px;
+}
+*/

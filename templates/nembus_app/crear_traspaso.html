@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuevo Traspaso de Combustible</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 2em; background-color: #f4f4f9; }
+        .main-form { max-width: 500px; margin: auto; padding: 2em; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h2 { text-align: center; }
+        label { display: block; margin-bottom: .5em; font-weight: bold; }
+        input, select { width: 100%; padding: .8em; margin-bottom: 1em; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; }
+        button { width: 100%; background-color: #ffc107; color: #333; font-weight: bold; cursor: pointer; border: none; padding: .8em; border-radius: 4px; }
+        .back-link { display: block; text-align: center; margin-top: 1em; }
+        .message { padding: 1em; margin-bottom: 1em; border-radius: 4px; text-align: center; }
+        .message.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .message.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        @media (max-width: 600px) {
+            body { padding: 10px; margin: 0; }
+            .main-form { padding: 1.5em; margin: 10px; }
+            input, select, button { padding: 1em; font-size: 1.1em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-form">
+        <form method="post">
+            <h2>Registrar Traspaso de Combustible</h2>
+            {% if messages %}{% for message in messages %}<div class="message {{ message.tags }}">{{ message }}</div>{% endfor %}{% endif %}
+            {% csrf_token %}
+
+            <label for="camion_origen">Desde Camión:</label>
+            <select id="camion_origen" name="camion_origen" required>
+                <option value="">Seleccione camión de origen...</option>
+                {% for camion in camiones %}
+                    <option value="{{ camion.id }}">{{ camion.patente }} (Actual: {{ camion.litros_actuales|floatformat:0 }} L)</option>
+                {% endfor %}
+            </select>
+
+            <label for="camion_destino">Hacia Camión:</label>
+            <select id="camion_destino" name="camion_destino" required>
+                <option value="">Seleccione camión de destino...</option>
+                {% for camion in camiones %}
+                    <option value="{{ camion.id }}">{{ camion.patente }} (Actual: {{ camion.litros_actuales|floatformat:0 }} L)</option>
+                {% endfor %}
+            </select>
+
+            <label for="litros">Litros a Traspasar:</label>
+            <input type="number" id="litros" name="litros" step="0.01" required>
+
+            <button type="submit">Guardar Traspaso</button>
+            <a href="{% url 'nembus_app:dashboard_trabajador' %}" class="back-link">Volver al Dashboard</a>
+        </form>
+    </div>
+</body>
+</html>

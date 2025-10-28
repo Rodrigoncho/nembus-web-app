@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionar Turno {{ reporte.turno.nombre }} - {{ reporte.fecha_inicio|date:"d/m/Y" }}</title>
+    <style>
+        body { font-family: sans-serif; margin: 2em; background-color: #f8f9fa; }
+        .container { max-width: 900px; margin: auto; padding: 2em; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .messages { list-style: none; padding: 0; margin-bottom: 1rem; }
+        .messages li { padding: 1rem; border-radius: 4px; border: 1px solid transparent; margin-bottom: 0.5rem;}
+        .messages li.success { background-color: #d1e7dd; color: #0f5132; border-color: #badbcc; }
+        .messages li.error { background-color: #f8d7da; color: #842029; border-color: #f5c2c7; }
+        .errorlist { color: #dc3545; font-size: 0.8em; list-style: none; padding-left: 0; margin-top: 0.2rem;}
+        .bomba-section { margin-bottom: 1.5em; padding: 1.5em; border: 1px solid #dee2e6; border-radius: 8px; background-color: #fff; }
+        .venta-form { display: flex; align-items: flex-end; gap: 1rem; margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px dashed #eee;}
+        .venta-form > div { flex: 1; margin-bottom: 0; } /* Ajuste para alinear mejor */
+        .venta-form label { display: block; font-size: 0.85em; margin-bottom: 0.2rem; font-weight: bold; }
+        /* Permitir números en Socio Propietario y N° Máquina también */
+        .venta-form input[type="number"], .venta-form input[type="text"] {
+             width: 100%; padding: 0.375rem 0.75rem; font-size: 1rem; border: 1px solid #ced4da; border-radius: 0.25rem; box-sizing: border-box;
+             /* Opcional: restringir a solo números si es estrictamente necesario, pero text puede ser más flexible */
+             /* -moz-appearance: textfield; Firefox */
+        }
+        /* Ocultar flechas en input number (opcional) */
+        /* .venta-form input[type="number"]::-webkit-outer-spin-button,
+        .venta-form input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        } */
+        .venta-form .delete-col { flex: 0 0 80px; text-align: center; padding-bottom: 0.5rem;} /* Más espacio para checkbox + label */
+        .venta-form .delete-col label { font-size: 0.8em; margin-right: 5px; }
+        .btn-danger { background-color: #dc3545; color: white; border: none; padding: 0.2rem 0.5rem; cursor: pointer; border-radius: 3px; font-size: 0.8em; }
+        .btn-success { background-color: #198754; color: white; border: none; padding: 0.3rem 0.6rem; cursor: pointer; border-radius: 3px; margin-top: 1rem; }
+        .btn-primary { padding: 0.75rem 1.25rem; background-color: #0d6efd; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-secondary { background-color: #6c757d; color: white; border: none; padding: 0.75rem 1.25rem; border-radius: 4px; cursor: pointer; margin-left: 1rem;}
+        .btn-link { text-decoration: none; color: #6c757d; margin-left: 1rem; vertical-align: middle; }
+        /* Ocultar el formulario 'empty' que usamos como plantilla */
+        .empty-form { display: none; }
+        hr { margin: 2rem 0; border-top: 1px solid #dee2e6; }
+        .form-actions { text-align: center; margin-top: 2rem; } /* Contenedor para botones finales */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Gestionando Turno: {{ reporte.turno.nombre }}</h2>
+        <p><strong>Punto de Venta:</strong> {{ reporte.turno.punto_de_venta.nombre }}</p>
+        <p><strong>Inicio:</strong> {{ reporte.fecha_inicio|date:"d/m/Y H:i" }}</p>
+
+        {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+
+            {# Iterar sobre la lista combinada pasada desde la vista #}
+            {% for lectura, formset in lecturas_con_formsets %}
+                <div class="bomba-section">
+                    <h3>Bomba: {{ lectura.bomba.nombre }}</h3>
+                    <p>Contador Inicial Registrado: <strong>{{ lectura.contador_inicial }}</strong></p>
+
+                    {% if formset %} {# Asegurarse que el formset existe para esta lectura #}
+                        {{ formset.management_form }} {# Campos ocultos necesarios (TOTAL_FORMS, INITIAL_FORMS, etc.) #}
+                        <h4>Registros de Venta Individuales</h4>
+
+                        {# Contenedor para los forms de esta bomba #}
+                        <div id="ventas-{{ lectura.id }}">
+                            {# Renderiza los formularios existentes y la plantilla vacía (empty_form) al final #}
+                            {% for form in formset %}
+                                {# Renderiza formularios normales (existentes o extras ya añadidos) #}
+                                <div class="venta-form" id="{{ form.prefix }}-row">
+                                     {{ form.id }} {# Campo oculto con ID si editas existentes #}
+                                    <div class="form-group">
+                                        <label for="{{ form.numero_maquina.id_for_label }}">{{ form.numero_maquina.label }}:</label>
+                                        {{ form.numero_maquina }}
+                                        {% if form.numero_maquina.errors %}<div class="errorlist">{{ form.numero_maquina.errors }}</div>{% endif %}
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="{{ form.socio_propietario.id_for_label }}">{{ form.socio_propietario.label }}:</label>
+                                        {{ form.socio_propietario }}
+                                        {% if form.socio_propietario.errors %}<div class="errorlist">{{ form.socio_propietario.errors }}</div>{% endif %}
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="{{ form.litros_vendidos.id_for_label }}">{{ form.litros_vendidos.label }}:</label>
+                                        {{ form.litros_vendidos }}
+                                        {% if form.litros_vendidos.errors %}<div class="errorlist">{{ form.litros_vendidos.errors }}</div>{% endif %}
+                                    </div>
+                                    <div class="delete-col">
+                                        {% if formset.can_delete and form.instance.pk %} {# Mostrar solo si puede borrar y si el form representa un objeto existente #}
+                                            <label for="{{ form.DELETE.id_for_label }}">Borrar</label>
+                                            {{ form.DELETE }}
+                                        {% endif %}
+                                    </div>
+                                    {% if form.non_field_errors %} <div class="errorlist">{{ form.non_field_errors }}</div> {% endif %}
+                                </div>
+                            {% endfor %}
+
+                            {# Plantilla oculta para clonar con JavaScript - Usando formset.empty_form #}
+                            <div class="venta-form empty-form" id="{{ formset.prefix }}-empty-form-row">
+                                 {# No necesitamos ID aquí #}
+                                <div class="form-group">
+                                    <label for="{{ formset.empty_form.numero_maquina.id_for_label }}">{{ formset.empty_form.numero_maquina.label }}:</label>
+                                    {{ formset.empty_form.numero_maquina }}
+                                </div>
+                                <div class="form-group">
+                                    <label for="{{ formset.empty_form.socio_propietario.id_for_label }}">{{ formset.empty_form.socio_propietario.label }}:</label>
+                                    {{ formset.empty_form.socio_propietario }}
+                                </div>
+                                <div class="form-group">
+                                    <label for="{{ formset.empty_form.litros_vendidos.id_for_label }}">{{ formset.empty_form.litros_vendidos.label }}:</label>
+                                    {{ formset.empty_form.litros_vendidos }}
+                                </div>
+                                <div class="delete-col">
+                                    {# No se muestra DELETE en la plantilla #}
+                                </div>
+                            </div>
+                            {# Fin Plantilla #}
+
+                        </div> {# Fin div id="ventas-{{ lectura.id }}" #}
+
+                        {# Botón para añadir, usa el prefijo del formset actual #}
+                        <button type="button" class="btn-success add-venta-button" data-container-id="ventas-{{ lectura.id }}" data-prefix="{{ formset.prefix }}">Añadir Venta +</button>
+
+                        {% if formset.non_form_errors %} {# Errores generales del formset #}
+                            <div class="errorlist mt-2">{{ formset.non_form_errors }}</div>
+                        {% endif %}
+                    {% else %}
+                        <p style="color: red;">Error: No se encontró el formset para la lectura {{ lectura.id }}</p>
+                    {% endif %}
+                </div> {# Fin bomba-section #}
+            {% empty %}
+                <p>No hay lecturas de bombas asociadas a este reporte.</p>
+            {% endfor %} {# Fin del bucle principal for lectura, formset #}
+
+            <hr>
+            <div class="form-actions">
+                <button type="submit" name="guardar_avance" class="btn-secondary">Guardar Avance</button>
+                <button type="submit" name="finalizar_turno" class="btn-primary">Finalizar Turno</button>
+                <a href="{% url 'nembus_app:dashboard_trabajador' %}" class="btn-link">Volver sin guardar</a>
+            </div>
+        </form>
+
+    </div> {# Fin container #}
+
+    <script>
+        document.addEventListener('click', function(event) {
+            // Verificar si el clic fue en un botón "Añadir Venta +"
+            if (event.target.classList.contains('add-venta-button')) {
+                const button = event.target;
+                const containerId = button.dataset.containerId;
+                const prefix = button.dataset.prefix;
+                addForm(containerId, prefix);
+            }
+        });
+
+        function addForm(containerId, prefix) {
+            const container = document.getElementById(containerId);
+            if (!container) { console.error('Contenedor no encontrado:', containerId); return; }
+
+            // Input que lleva la cuenta total de formularios para este formset
+            const totalFormsInput = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
+            if (!totalFormsInput) { console.error('Input TOTAL_FORMS no encontrado para prefijo:', prefix); return; }
+
+            // El índice para el nuevo formulario será el valor actual de TOTAL_FORMS
+            const formIdx = parseInt(totalFormsInput.value);
+
+            // Encuentra la plantilla del formulario vacío DENTRO del contenedor específico
+            const emptyFormTemplate = container.querySelector('.empty-form');
+             if (!emptyFormTemplate) {
+                 console.error('Plantilla empty-form no encontrada en:', containerId);
+                 return;
+              }
+
+            // Clonar la plantilla
+            const newForm = emptyFormTemplate.cloneNode(true);
+            newForm.classList.remove('empty-form'); // Hacerlo visible
+            newForm.id = `${prefix}-${formIdx}-row`; // Asignar un ID único a la fila nueva
+
+            // Expresión regular para buscar '__prefix__' en los atributos
+            const prefixRegex = new RegExp('__prefix__', 'g');
+
+            // Actualizar los atributos 'name', 'id' de todos los elementos input/select/textarea
+            newForm.querySelectorAll('input, select, textarea').forEach(el => {
+                // Reemplazar '__prefix__' con el índice correcto en name e id
+                if(el.name) el.name = el.name.replace(prefixRegex, formIdx);
+                if(el.id) el.id = el.id.replace(prefixRegex, formIdx);
+
+                // Opcional: Limpiar el valor del input clonado (excepto checkboxes/radios/hidden)
+                if (el.tagName === 'INPUT' && !['checkbox', 'radio', 'hidden'].includes(el.type)) {
+                   el.value = '';
+                } else if (el.tagName === 'SELECT') {
+                   el.selectedIndex = 0; // Resetear select
+                }
+                 // Habilitar el checkbox DELETE si existe (no debería en empty_form pero por si acaso)
+                 if (el.name && el.name.endsWith('-DELETE')) {
+                     el.disabled = false;
+                 }
+            });
+
+            // Actualizar el atributo 'for' de las etiquetas <label>
+            newForm.querySelectorAll('label').forEach(el => {
+                if (el.htmlFor) {
+                     el.htmlFor = el.htmlFor.replace(prefixRegex, formIdx);
+                }
+            });
+
+             // Insertar el nuevo formulario DENTRO del contenedor, antes de la plantilla oculta
+             container.insertBefore(newForm, emptyFormTemplate);
+
+
+            // Incrementar el contador TOTAL_FORMS
+            totalFormsInput.value = formIdx + 1;
+
+            console.log(`Formulario añadido con índice ${formIdx} para ${prefix}. Nuevo TOTAL_FORMS: ${totalFormsInput.value}`); // Depuración
+        }
+
+        // Función para marcar para borrar (sin cambios)
+        function markForDelete(checkboxId, rowId) {
+            const checkbox = document.getElementById(checkboxId);
+            const formRow = document.getElementById(rowId);
+            if (checkbox && formRow) {
+                // Ocultar visualmente la fila si se marca para borrar
+                formRow.style.display = checkbox.checked ? 'none' : 'flex';
+            }
+        }
+    </script>
+</body>
+</html>

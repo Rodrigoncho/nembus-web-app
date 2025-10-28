@@ -1,0 +1,22 @@
+{% extends "admin/base.html" %}
+
+{% block userlinks %}
+    <a href="{% url 'nembus_app:dashboard_gerente_redirect' %}">📊 Ver Dashboard</a> /
+
+    {# Este es el enlace que apunta a nembus.cl #}
+    <a href="https://nembus.cl/" target="_blank">VER EL SITIO</a> /
+
+
+    {% if user.has_usable_password %}
+        <a href="{% url 'admin:password_change' %}">Cambiar Contraseña</a> /
+    {% endif %}
+
+    <form id="logout-form" method="post" action="{% url 'admin:logout' %}" style="display: inline;">
+        {% csrf_token %}
+        <button type="submit" style="background: none!important; border: none; padding: 0!important; color: inherit; text-decoration: underline; cursor: pointer; font: inherit;">
+            Cerrar Sesion
+        </button>
+    </form>
+
+
+{% endblock %}

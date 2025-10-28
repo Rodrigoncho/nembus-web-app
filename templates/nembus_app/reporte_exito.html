@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Éxito</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background-color: #f4f4f9; padding-top: 5em; }
+        .container { max-width: 500px; margin: auto; padding: 2em; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #28a745; }
+        a { display: inline-block; text-decoration: none; background-color: #007bff; color: white; padding: 10px 20px; border-radius: 5px; margin-top: 1em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✅ ¡Reporte Guardado con Éxito!</h1>
+        <p>La información ha sido enviada correctamente.</p>
+        <a href="{% url 'nembus_app:crear_reporte' %}">Registrar otra venta</a>
+    </div>
+</body>
+</html>

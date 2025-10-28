@@ -1,0 +1,24 @@
+<div class="card">
+    <h3>Inventario de Camiones</h3>
+    {% for camion in camiones %}{% if camion.capacidad_total > 0 %}<div><strong>{{ camion.patente }}</strong>: {{ camion.litros_actuales|floatformat:0 }}/{{ camion.capacidad_total|floatformat:0 }} L<div class="progress-bar"><div class="progress-bar-fill" style="width:{{ camion.porcentaje_actual }}%;">{% if camion.porcentaje_actual > 10 %}{{ camion.porcentaje_actual|floatformat:0 }}%{% endif %}</div></div></div>{% endif %}{% empty %}<p>No hay camiones.</p>{% endfor %}
+</div>
+
+<div class="card">
+    <h3>Inventario de Bombas</h3>
+    {% for bomba in bombas %}
+        <div>
+            <strong>{{ bomba.punto_de_venta.nombre }} - {{ bomba.nombre }}</strong>: {{ bomba.litros_actuales|floatformat:0 }} L
+            </div>
+    {% empty %}
+        <p>No hay bombas registradas.</p>
+    {% endfor %}
+</div>
+
+<div class="card">
+    <h3>Proporción de Ingresos (Hoy)</h3>
+    <div class="chart-container"><canvas id="ingresosChart" data-combustible="{{ ingresos_combustible_hoy }}" data-flete="{{ ingresos_flete_hoy }}"></canvas></div>
+</div>
+
+<div class="card">
+    <h3>Actividad Reciente</h3>
+    </div>

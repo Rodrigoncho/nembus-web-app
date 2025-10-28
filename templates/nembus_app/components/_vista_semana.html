@@ -1,0 +1,17 @@
+<div class="card">
+    <h3>Rentabilidad por Chofer</h3>
+    <div class="chart-container"><canvas id="rentabilidadChoferChart" data-labels='{{ rentabilidad_choferes_labels|safe }}' data-combustible='{{ rentabilidad_choferes_combustible|safe }}' data-flete='{{ rentabilidad_choferes_flete|safe }}'></canvas></div>
+</div>
+<div class="card">
+    <h3>Desglose de Ingresos</h3>
+    <div class="chart-container"><canvas id="desgloseIngresosChart" data-values='{{ desglose_ingresos_data|safe }}'></canvas></div>
+</div>
+<div class="card">
+    <h3>Eficiencia de la Flota</h3>
+    <div class="table-responsive">
+        <table>
+            <thead><tr><th>Patente</th><th class="currency">Nº Viajes</th><th class="currency">Litros Desp.</th><th class="currency">Prom. L/Viaje</th><th class="currency">Ingreso Total</th></tr></thead>
+            <tbody>{% for c in eficiencia_flota %}<tr><td><strong>{{ c.camion__patente }}</strong></td><td class="currency">{{ c.num_viajes }}</td><td class="currency">{{ c.total_litros|floatformat:0 }} L</td><td class="currency">{{ c.promedio_litros_viaje|floatformat:1 }} L</td><td class="currency"><strong>${{ c.total_ingresos|floatformat:0 }}</strong></td></tr>{% empty %}<tr><td colspan="5" style="text-align:center;">No hay datos.</td></tr>{% endfor %}</tbody>
+        </table>
+    </div>
+</div>
