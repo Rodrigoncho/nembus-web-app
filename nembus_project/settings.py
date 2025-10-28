@@ -12,30 +12,26 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECRET_KEY: Lee desde variable de entorno en producción, usa una clave simple para desarrollo.
-# ¡NO USES LA CLAVE DE DESARROLLO EN PRODUCCIÓN! Railway te permitirá setearla de forma segura.
+# ¡NO USES LA CLAVE DE DESARROLLO EN PRODUCCIÓN! Render te permitirá setearla de forma segura.
 SECRET_KEY = os.environ.get(
     'SECRET_KEY',
     'dev-insecure-k3y-pl4c3h0ld3r-@$!abc*&^' # Clave simple y aleatoria para desarrollo
 )
 
 # DEBUG: Lee desde variable de entorno. Por defecto es False para producción.
-# En Railway, NO definas DJANGO_DEBUG o ponla en False. En local, puedes crearla y ponerla en True si necesitas.
+# En Render, NO definas DJANGO_DEBUG o ponla en False. En local, puedes crearla y ponerla en True si necesitas.
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
-# ALLOWED_HOSTS: Configuración para desarrollo y producción (Railway)
-# Obtiene el host de Railway si está disponible, si no, usa un string vacío.
-RAILWAY_HOSTNAME_FULL = os.environ.get('RAILWAY_STATIC_URL') # Ej: https://myapp.up.railway.app/
-
+# ALLOWED_HOSTS: Configuración para desarrollo y producción (Render)
 ALLOWED_HOSTS = ['localhost', '127.0.0.1'] # Para desarrollo local
 
-RAILWAY_HOSTNAME_DOMAIN = None
-if RAILWAY_HOSTNAME_FULL:
-    # Extrae solo el nombre de host de la URL completa (ej: myapp.up.railway.app)
-    # Quitamos 'https://' y '/' al final si existen
-    RAILWAY_HOSTNAME_DOMAIN = RAILWAY_HOSTNAME_FULL.replace('https://', '').replace('/', '')
-    ALLOWED_HOSTS.append(RAILWAY_HOSTNAME_DOMAIN)
+# Obtiene el hostname externo proporcionado por Render
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+    print(f"Añadido RENDER_EXTERNAL_HOSTNAME a ALLOWED_HOSTS: {RENDER_EXTERNAL_HOSTNAME}") # Para depuración
 
-# Si tienes un dominio personalizado configurado en Railway, añádelo aquí
+# Si tienes un dominio personalizado configurado en Render, añádelo aquí
 # o léelo desde otra variable de entorno.
 # CUSTOM_DOMAIN = os.environ.get('CUSTOM_DOMAIN')
 # if CUSTOM_DOMAIN:
@@ -91,7 +87,7 @@ WSGI_APPLICATION = 'nembus_project.wsgi.application'
 
 
 # Database
-# Configuración dinámica: usa DATABASE_URL de Railway si existe, si no, usa SQLite local.
+# Configuración dinámica: usa DATABASE_URL de Render si existe, si no, usa SQLite local.
 DATABASES = {
     'default': dj_database_url.config(
         # Busca la variable de entorno DATABASE_URL
@@ -147,7 +143,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # https://docs.djangoproject.com/en/5.2/topics/files/
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media' # Donde se guardan localmente (OJO: No persistente en Railway por defecto)
+MEDIA_ROOT = BASE_DIR / 'media' # Donde se guardan localmente (OJO: No persistente en Render por defecto)
 
 
 # Default primary key field type
@@ -160,8 +156,9 @@ LOGIN_URL = 'nembus_app:login' # URL a la que redirige @login_required
 
 # CSRF Trusted Origins - Necesario cuando DEBUG=False
 CSRF_TRUSTED_ORIGINS = []
-if RAILWAY_HOSTNAME_DOMAIN: # Usa la variable que extrajimos antes
-    CSRF_TRUSTED_ORIGINS.append(f"https://{RAILWAY_HOSTNAME_DOMAIN}")
+if RENDER_EXTERNAL_HOSTNAME: # Usa la variable que extrajimos antes
+    # Render usa HTTPS, así que añadimos la URL completa
+    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
 
 # Si tienes un dominio personalizado, añádelo también con https://
 # if CUSTOM_DOMAIN:
@@ -169,9 +166,10 @@ if RAILWAY_HOSTNAME_DOMAIN: # Usa la variable que extrajimos antes
 
 print(f"CSRF_TRUSTED_ORIGINS configurados: {CSRF_TRUSTED_ORIGINS}") # Para depuración
 
+
 # --- CONFIGURACIONES ADICIONALES (OPCIONALES PERO RECOMENDADAS) ---
 
-# Logging (básico para ver errores en Railway)
+# Logging (básico para ver errores en Render)
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
